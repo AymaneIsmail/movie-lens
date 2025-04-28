@@ -3,8 +3,8 @@
 # Script: download_kaggle_dataset.sh
 # Description: Télécharge et décompresse un dataset depuis Kaggle dans le dossier du script
 
-KAGGLE_USERNAME="aymaneismail"
-KAGGLE_KEY="8fdfa9f04e122370c0ff666b3990d51f"
+KAGGLE_USERNAME="your_kaggle_username"
+KAGGLE_KEY="your_kaggle_key"
 DATASET="grouplens/movielens-20m-dataset"
 
 # Dossier du script
