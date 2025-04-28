@@ -17,6 +17,13 @@ This project provides a ready-to-use Dockerized environment to work with:
 ## 🔧 Project Structure
 ```
 /
+|-- data
+    |-- genome_scores.csv
+    |-- genome_tags.csv
+    |-- link.csv
+    |-- movie.csv
+    |-- rating.csv
+    |-- tag.csv
 |-- Dockerfile
 |-- docker-compose.yml
 |-- Makefile
@@ -30,6 +37,9 @@ This project provides a ready-to-use Dockerized environment to work with:
 |-- notebooks/
 |   |-- spark_kafka_demo.ipynb
 |-- scripts/
+    |-- hdfs
+      |-- hdfs_directory_setup.sh
+      |-- import_csv_to_hdfs.sh
     |-- spark_batch_csv_count.py
 ```
 
