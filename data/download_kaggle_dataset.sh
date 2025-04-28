@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script: download_kaggle_dataset.sh
-# Description: Télécharge et décompresse un dataset depuis Kaggle dans le dossier du script
+# Description: Télécharge et décompresse un dataset depuis Kaggle dans le dossier du script -> https://www.kaggle.com/settings -> générer une clé d'API
 
 KAGGLE_USERNAME="your_kaggle_username"
 KAGGLE_KEY="your_kaggle_key"
