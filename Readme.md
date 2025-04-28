@@ -65,6 +65,14 @@ make down
 make clean
 ```
 
+## 🎬 Download MovieLens Dataset
+
+### Automatic Download (Kaggle)
+- Use the `download_kaggle_dataset.sh` script to download and extract the MovieLens dataset from Kaggle. Before running it, make sure to enter your Kaggle credentials (`KAGGLE_USERNAME` and `KAGGLE_KEY`) in the script. You can generate an API key from your Kaggle account: [https://www.kaggle.com/settings](https://www.kaggle.com/settings).
+  ```bash
+  sh ./data/download_kaggle_dataset.sh
+  ```
+
 ## 📄 Notebooks & Scripts
 - **spark_kafka_demo.ipynb** : Connects Spark Structured Streaming to a Kafka topic and displays the streamed data.
 - **spark_batch_csv_count.py** : A simple Spark batch job reading a CSV file from HDFS and counting rows.
