@@ -1,5 +1,12 @@
 #!/bin/bash
 
+echo "Vérification de la disponibilité de HDFS..."
+hdfs dfs -ls / > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "HDFS n'est pas accessible. Assurez-vous que Hadoop est démarré."
+  exit 1
+fi
+
 echo "Création de la structure de dossiers dans HDFS..."
 hdfs dfs -mkdir -p /errors
 hdfs dfs -mkdir -p /input
