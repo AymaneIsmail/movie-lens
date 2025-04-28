@@ -18,11 +18,13 @@ services:
       - ./config/hadoop:/opt/hadoop/etc/hadoop
     command: >
       bash -c "
-        /opt/hadoop/bin/hdfs namenode -format &&
-        /opt/hadoop/sbin/start-dfs.sh &&
-        /opt/hadoop/sbin/start-yarn.sh &&
-        /opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties &
-        sleep 5 &&
-        /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties &
-        jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      /opt/hadoop/bin/hdfs namenode -format &&
+      /opt/hadoop/bin/hdfs --daemon start namenode &&
+      /opt/hadoop/bin/hdfs --daemon start datanode &&
+      /opt/hadoop/bin/hdfs --daemon start secondarynamenode &&
+      /opt/hadoop/sbin/start-yarn.sh &&
+      /opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties &
+      sleep 5 &&
+      /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties &
+      jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token='' --NotebookApp.password=''
       "
