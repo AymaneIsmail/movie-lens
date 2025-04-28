@@ -14,7 +14,6 @@ services:
       - HADOOP_HOME=/opt/hadoop
       - SPARK_HOME=/opt/spark
       - KAFKA_HOME=/opt/kafka
-      - PATH=/opt/hadoop/bin:/opt/hadoop/sbin:/opt/spark/bin:/opt/spark/sbin:/opt/kafka/bin:$PATH
     volumes:
       - ./config/hadoop:/opt/hadoop/etc/hadoop
     command: >
