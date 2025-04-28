@@ -37,7 +37,7 @@ RUN wget https://archive.apache.org/dist/spark/spark-$SPARK_VERSION/spark-$SPARK
 ENV SPARK_HOME=/opt/spark
 ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
 
-ENV KAFKA_VERSION=3.6.1
+ENV KAFKA_VERSION=3.7.2
 RUN wget https://downloads.apache.org/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz && \
     tar -xvzf kafka_2.13-$KAFKA_VERSION.tgz && \
     mv kafka_2.13-$KAFKA_VERSION /opt/kafka && \
@@ -45,6 +45,8 @@ RUN wget https://downloads.apache.org/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VER
 
 ENV KAFKA_HOME=/opt/kafka
 ENV PATH=$PATH:$KAFKA_HOME/bin:$PATH
+
+COPY requirements.txt /requirements.txt
 
 RUN pip3 install --upgrade pip && \
     pip3 install -r /requirements.txt
