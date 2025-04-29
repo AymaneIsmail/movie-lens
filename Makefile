@@ -1,17 +1,17 @@
 PROJECT_NAME=bigdata-env
 
 build:
-	docker build -t $(PROJECT_NAME) .
+	docker compose build -t $(PROJECT_NAME)
 
 up:
-	docker-compose up
+	docker compose up -d
 
 down:
-	docker-compose down
+	docker compose down
 
 clean:
-	docker-compose down --rmi all --volumes --remove-orphans
+	docker compose down --rmi all --volumes --remove-orphans
 	docker system prune -af
 
 shell:
-	docker exec -it bigdata-container bash
+	docker exec -it hadoop-namenode bash

@@ -1,0 +1,92 @@
+services:
+  namenode:
+    container_name: hadoop-namenode
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: namenode
+    networks:
+      - hadoop-net
+    ports:
+      - "9870:9870"   # Hadoop NameNode UI
+      # - "9000:9000"   # HDFS RPC
+      - "8088:8088"   # YARN ResourceManager UI
+      - "8080:8080"   # Spark UI
+      - "18080:18080" # Spark History Server UI
+      - "4040:4040"   # Spark Job Monitoring UI
+      - "8888:8888"   # Jupyter Notebook
+    volumes:
+      - namenode-data:/home/root/hadoop/dfs/name
+      - ./notebooks:/root/notebooks
+      - ./data:/root/data
+      - ./scripts:/root/scripts
+    command: [ "sh", "-c", "/root/start-cluster.sh namenode" ]
+
+  datanode1:
+    container_name: hadoop-datanode1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: datanode1
+    networks:
+      - hadoop-net
+    volumes:
+    # @see https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml - dfs.datanode.data.dir
+      - datanode1-data:/home/root/hadoop/dfs/data
+    command: [ "sh", "-c", "/root/start-cluster.sh datanode" ]
+    depends_on:
+      - namenode
+
+  datanode2:
+    container_name: hadoop-datanode2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: datanode2
+    networks:
+      - hadoop-net
+    volumes:
+      - datanode2-data:/home/root/hadoop/dfs/data
+    command: [ "sh", "-c", "/root/start-cluster.sh datanode" ]
+    depends_on:
+      - namenode
+
+  zookeeper:
+    container_name: zookeeper
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: zookeeper
+    networks:
+      - hadoop-net
+    ports:
+      - "2181:2181"
+    command: [ "sh", "-c", "/root/start-cluster.sh zookeeper" ]
+
+  kafka:
+    container_name: kafka
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: kafka
+    networks:
+      - hadoop-net
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    command: [ "sh", "-c", "/root/start-cluster.sh kafka" ]
+
+volumes:
+  namenode-data:
+  datanode1-data:
+  datanode2-data:
+
+networks:
+  hadoop-net:
