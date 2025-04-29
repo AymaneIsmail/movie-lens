@@ -9,6 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -q && apt install -y --no-install-recommends \
     openssh-server \
     git \
+    netcat \
     nano \
     unzip \
     python3 \
@@ -74,17 +75,26 @@ RUN pip3 install --upgrade pip && \
 COPY config/hadoop/ $HADOOP_CONF_DIR/
 COPY config/spark/ $SPARK_HOME/conf/
 COPY config/ssh/ssh_config /root/.ssh/config
+
+# ========= COPY SCRIPTS =========
 COPY scripts/start-cluster.sh /root/start-cluster.sh
+COPY scripts/create-kafka-topics.sh /root/create-kafka-topics.sh
+COPY scripts/wait-for-namenode.sh /root/wait-for-namenode.sh
 
 # ========= SET PERMISSIONS & CREATE FOLDERS =========
-RUN chmod 600 /root/.ssh/config && \
-    mkdir -p /tmp/spark-events && chmod 777 /tmp/spark-events && \
-    chmod +x /root/start-cluster.sh
+RUN ssh-keygen -t rsa -f /root/.ssh/id_rsa -q -N "" && \
+    cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys && \
+    chmod 600 /root/.ssh/authorized_keys && \
+    chmod 700 /root/.ssh
 
-RUN ssh-keygen -t rsa -f /root/.ssh/id_rsa -q -N "" \
-    && cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys \
-    && chmod 600 /root/.ssh/authorized_keys
+# ========= CREATE SPARK EVENTS DIR =========
+RUN mkdir -p /tmp/spark-events && chmod 777 /tmp/spark-events
+
+# ========= MAKE SCRIPT EXECUTABLE =========
+RUN chmod +x \ 
+    /root/start-cluster.sh \ 
+    /root/create-kafka-topics.sh \
+    /root/wait-for-namenode.sh
 
 # ========= EXPOSE PORTS =========
-# @SOFIANE vraiment besoin ?
-EXPOSE 8888 9870 8088 7077 8080 2181 9092 18080 4040
+EXPOSE 9870 8088 7077 8080 18080 4040 8888 2181 9092
