@@ -25,7 +25,7 @@ This project provides a ready-to-use Dockerized environment to work with:
     |-- rating.csv
     |-- tag.csv
 |-- Dockerfile
-|-- docker-compose.yml
+|-- compose.yml
 |-- Makefile
 |-- requirements.txt
 |-- config/
@@ -34,6 +34,15 @@ This project provides a ready-to-use Dockerized environment to work with:
 |       |-- hdfs-site.xml
 |       |-- mapred-site.xml
 |       |-- yarn-site.xml
+|       |-- hadoop-env.sh
+|       |-- log4j.properties
+|       |-- slaves
+|   |-- spark/
+|       |-- spark-default.conf
+|       |-- spark-env.sh
+|       |-- workers
+|   |-- ssh/
+|       |-- ssh_config
 |-- notebooks/
 |   |-- spark_kafka_demo.ipynb
 |-- scripts/
@@ -41,6 +50,7 @@ This project provides a ready-to-use Dockerized environment to work with:
       |-- hdfs_directory_setup.sh
       |-- import_csv_to_hdfs.sh
     |-- spark_batch_csv_count.py
+    |-- start-cluster.sh
 ```
 
 ## 🔄 Quick Start
@@ -57,6 +67,7 @@ make up
 
 This will start:
 - Hadoop HDFS & YARN
+- Spark Master + Workers
 - Kafka + Zookeeper
 - Jupyter Notebook (accessible on http://localhost:8888)
 
