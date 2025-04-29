@@ -1,78 +1,90 @@
-FROM ubuntu:22.04
+# ========= STAGE: BASE =========
+ARG JAVA_VERSION=17
+FROM eclipse-temurin:${JAVA_VERSION}-jammy
 
-# Installer les dépendances nécessaires
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
-    openjdk-11-jdk \
+WORKDIR /root
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ========= INSTALL SYSTEM PACKAGES =========
+RUN apt update -q && apt install -y --no-install-recommends \
+    openssh-server \
+    git \
+    nano \
+    unzip \
     python3 \
     python3-pip \
+    sudo \
     wget \
     curl \
-    git \
-    net-tools \
-    iputils-ping \
-    nano \
     gnupg \
     lsb-release \
-    openssh-client \
-    openssh-server \
-    && apt-get clean \
+    net-tools \
+    iputils-ping \
+    && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Définir JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+# ========= SETUP JAVA ENV =========
+ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH=$PATH:$JAVA_HOME/bin
 
-# Installer Hadoop
-ENV HADOOP_VERSION=3.3.6
-RUN wget https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz && \
-    tar -xvzf hadoop-${HADOOP_VERSION}.tar.gz && \
-    mv hadoop-${HADOOP_VERSION} /opt/hadoop && \
+# ========= SETUP PYTHON SYMLINK (si nécessaire) =========
+RUN if [ -x /usr/bin/python3.11 ]; then ln -sf /usr/bin/python3.11 /usr/bin/python; fi
+
+# ========= INSTALL HADOOP =========
+ENV HADOOP_VERSION=3.4.0
+RUN wget -q https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz && \
+    tar -xzf hadoop-${HADOOP_VERSION}.tar.gz && \
+    mv hadoop-${HADOOP_VERSION} /usr/local/hadoop && \
     rm hadoop-${HADOOP_VERSION}.tar.gz
 
-ENV HADOOP_HOME=/opt/hadoop
+ENV HADOOP_HOME=/usr/local/hadoop
+ENV HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+ENV HADOOP_HDFS_HOME=$HADOOP_HOME
+ENV LD_LIBRARY_PATH=$HADOOP_HOME/lib/native
 ENV PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
-# Installer Spark
+# ========= INSTALL SPARK =========
 ENV SPARK_VERSION=3.5.1
-RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
-    tar -xvzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
-    mv spark-${SPARK_VERSION}-bin-hadoop3 /opt/spark && \
+RUN wget -q https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    mv spark-${SPARK_VERSION}-bin-hadoop3 /usr/local/spark && \
     rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
 
-ENV SPARK_HOME=/opt/spark
+ENV SPARK_HOME=/usr/local/spark
+ENV SPARK_MASTER_PORT=7077
 ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 
-# Installer Kafka
+# ========= INSTALL KAFKA =========
 ENV KAFKA_VERSION=3.7.2
-RUN wget https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz && \
-    tar -xvzf kafka_2.13-${KAFKA_VERSION}.tgz && \
+RUN wget -q https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz && \
+    tar -xzf kafka_2.13-${KAFKA_VERSION}.tgz && \
     mv kafka_2.13-${KAFKA_VERSION} /opt/kafka && \
     rm kafka_2.13-${KAFKA_VERSION}.tgz
 
 ENV KAFKA_HOME=/opt/kafka
 ENV PATH=$PATH:$KAFKA_HOME/bin
 
-# Copier requirements.txt en avance pour profiter du cache Docker
+# ========= INSTALL PYTHON DEPENDENCIES =========
 COPY requirements.txt /tmp/requirements.txt
-
-# Installer les paquets Python
 RUN pip3 install --upgrade pip && \
     pip3 install -r /tmp/requirements.txt && \
     rm /tmp/requirements.txt
 
-# Copier les fichiers de configuration Hadoop
-COPY config/hadoop/core-site.xml $HADOOP_HOME/etc/hadoop/core-site.xml
-COPY config/hadoop/hdfs-site.xml $HADOOP_HOME/etc/hadoop/hdfs-site.xml
-COPY config/hadoop/mapred-site.xml $HADOOP_HOME/etc/hadoop/mapred-site.xml
-COPY config/hadoop/yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml
+# ========= COPY CONFIG FILES =========
+COPY config/hadoop/ $HADOOP_CONF_DIR/
+COPY config/spark/ $SPARK_HOME/conf/
+COPY config/ssh/ssh_config /root/.ssh/config
+COPY scripts/start-cluster.sh /root/start-cluster.sh
 
-# Créer les dossiers pour Hadoop
-RUN mkdir -p /opt/hadoop_data/hdfs/namenode && \
-    mkdir -p /opt/hadoop_data/hdfs/datanode
+# ========= SET PERMISSIONS & CREATE FOLDERS =========
+RUN chmod 600 /root/.ssh/config && \
+    mkdir -p /tmp/spark-events && chmod 777 /tmp/spark-events && \
+    chmod +x /root/start-cluster.sh
 
-# Exposer les ports nécessaires
-EXPOSE 8888
+RUN ssh-keygen -t rsa -f /root/.ssh/id_rsa -q -N "" \
+    && cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys \
+    && chmod 600 /root/.ssh/authorized_keys
 
-# Démarrer Jupyter Notebook
-CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+# ========= EXPOSE PORTS =========
+# @SOFIANE vraiment besoin ?
+EXPOSE 8888 9870 8088 7077 8080 2181 9092 18080 4040

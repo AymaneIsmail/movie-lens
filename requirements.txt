@@ -1,3 +1,6 @@
-pyspark==3.5.1
+pyspark==3.5.1 # synchroniser avec $SPARK_VERSION du Dockerfile
 jupyter
 kafka-python
+setuptools
+py4j
+pandas
