@@ -99,6 +99,22 @@ make clean
   ```
 
   ### Explanation
+
+  ### Explanation
+  Structure de Dossiers HDFS :
+  / (HDFS Root)
+  |-- errors/
+  |   |-- 2025-04-28/      # Dossier des erreurs avec date
+  |
+  |-- input/               # Dossier pour les fichiers CSV
+  |   |-- rating.csv       # Fichier CSV
+  |   |-- movie.csv        # Fichier CSV
+  |
+  |-- logs/
+  |   |-- 2025-04-28/      # Dossier des logs avec date
+  |
+  |-- processed/           # Dossier des fichiers traités
+
 - **`hdfs_directory_setup.sh`**: This script creates the necessary directory structure in HDFS.
 - **`import_csv_to_hdfs.sh`**: This script uploads your CSV files into the `/datasets` directory in HDFS.
 
