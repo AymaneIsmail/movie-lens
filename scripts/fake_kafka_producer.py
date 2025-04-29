@@ -5,7 +5,7 @@ import json
 import pandas as pd
 
 # Configuration de Kafka
-KAFKA_BROKER = 'localhost:9092'  # Remplacez par l'adresse de votre broker Kafka
+KAFKA_BROKER = 'kafka:9092'  # Remplacez par l'adresse de votre broker Kafka
 TOPIC_NAME = 'movielens_ratings'
 
 # Création du producteur Kafka
@@ -15,8 +15,8 @@ producer = KafkaProducer(
 )
 
 # Chargement des données MovieLens
-ratings_df = pd.read_csv('ratings.csv')
-movies_df = pd.read_csv('movies.csv')
+ratings_df = pd.read_csv('/root/data/rating.csv')
+movies_df = pd.read_csv('/root/data/movie.csv')
 
 # Extraction des utilisateurs et films uniques
 users = ratings_df['userId'].unique().tolist()

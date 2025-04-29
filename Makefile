@@ -1,7 +1,7 @@
 PROJECT_NAME=bigdata-env
 
 build:
-	docker compose build -t $(PROJECT_NAME)
+	docker compose build
 
 up:
 	docker compose up -d
