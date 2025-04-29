@@ -17,6 +17,13 @@ This project provides a ready-to-use Dockerized environment to work with:
 ## 🔧 Project Structure
 ```
 /
+|-- data
+    |-- genome_scores.csv
+    |-- genome_tags.csv
+    |-- link.csv
+    |-- movie.csv
+    |-- rating.csv
+    |-- tag.csv
 |-- Dockerfile
 |-- docker-compose.yml
 |-- Makefile
@@ -30,6 +37,9 @@ This project provides a ready-to-use Dockerized environment to work with:
 |-- notebooks/
 |   |-- spark_kafka_demo.ipynb
 |-- scripts/
+    |-- hdfs
+      |-- hdfs_directory_setup.sh
+      |-- import_csv_to_hdfs.sh
     |-- spark_batch_csv_count.py
 ```
 
@@ -73,6 +83,27 @@ make clean
   sh ./data/download_kaggle_dataset.sh
   ```
 
+## 📂 HDFS Setup
+
+  Before using HDFS, you need to set up the necessary directories and import your datasets. Use the provided scripts for this:
+
+1. **Set up HDFS directories**:
+   Run the `hdfs_directory_setup.sh` script to create the required directories in HDFS.
+  ```bash
+   sh ./scripts/hdfs/hdfs_directory_setup.sh
+  ```
+
+  2. **Import datasets into HDFS**: Use the import_csv_to_hdfs.sh script to upload your CSV files to HDFS.
+   ```bash
+   sh ./scripts/hdfs/import_csv_to_hdfs.sh
+  ```
+
+  ### Explanation
+- **`hdfs_directory_setup.sh`**: This script creates the necessary directory structure in HDFS.
+- **`import_csv_to_hdfs.sh`**: This script uploads your CSV files into the `/datasets` directory in HDFS.
+
+This ensures that users know how to initialize HDFS properly before running other components of the project.
+
 ## 📄 Notebooks & Scripts
 - **spark_kafka_demo.ipynb** : Connects Spark Structured Streaming to a Kafka topic and displays the streamed data.
 - **spark_batch_csv_count.py** : A simple Spark batch job reading a CSV file from HDFS and counting rows.
@@ -91,4 +122,4 @@ make clean
 
 ---
 
-Made with ❤️ by Marie
+Made with ❤️ by ABDELHAY, SOFIANE et AYMANE
