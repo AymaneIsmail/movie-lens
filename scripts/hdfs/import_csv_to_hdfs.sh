@@ -7,7 +7,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-LOCAL_DIR="/workspace/data"  # Répertoire monté à partir du volume Docker
+LOCAL_DIR="/root/data"  # Répertoire monté à partir du volume Docker
 HDFS_DIR="/input"
 
 echo "Vérification des fichiers CSV dans le répertoire local $LOCAL_DIR..."
