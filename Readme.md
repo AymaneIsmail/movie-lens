@@ -48,9 +48,15 @@ This project provides a ready-to-use Dockerized environment to work with:
 |-- scripts/
     |-- hdfs
       |-- init_hdfs_dirs.sh
+      |-- clean_hdfs_dirs.sh
       |-- upload_csv_to_hdfs.sh
+      |-- download_latest_hdfs_log.sh
+    |-- model
+      |-- spark_utils.py
+      |-- train_als.py
     |-- spark_batch_csv_count.py
     |-- start-cluster.sh
+    |-- wait-for-namenode.sh
 ```
 
 ## 🔄 Quick Start
