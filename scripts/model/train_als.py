@@ -2,93 +2,65 @@ from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 
-# ————————————————
-# À configurer : préfixe HDFS
-#   ""             → Spark utilise le fs par défaut (HDFS sur ton cluster Yarn)
-#   "hdfs:///"     → abréviation pour le NameNode configuré
-#   "hdfs://nn:9000" → URI complet si tu veux pointer sur un NN en particulier
-hdfs_prefix = "hdfs:///"  
+# 1. Initialisation de la session Spark
+spark = SparkSession.builder \
+    .appName("MovieLens ALS") \
+    .config("spark.executor.memory", "4g") \
+    .getOrCreate()
 
-# Chemins relatifs après ce préfixe
-ratings_path = f"{hdfs_prefix}/processed/rating.csv"
-movies_path  = f"{hdfs_prefix}/processed/movie.csv"   # ou "" si tu n'en as pas besoin
+# 2. Chargement des données depuis HDFS
+ratings_path = "hdfs:///processed/clean_rating.csv"
+ratings = spark.read.csv(ratings_path, header=True, inferSchema=True)
 
-# Hyperparamètres ALS
-rank      = 12
-regParam  = 0.05
-maxIter   = 15
+# 3. Préparation des données
+print("Schéma des données:")
+ratings.printSchema()
 
-# Train/test split
-train_ratio = 0.8
-# ————————————————
+print("\nAperçu des données:")
+ratings.show(5)
 
-def main():
-    print(f"► ratings = {ratings_path}")
-    print(f"► movies  = {movies_path or '— pas de metadata —'}")
-    print(f"► ALS params → rank={rank}, regParam={regParam}, maxIter={maxIter}")
-    print(f"► Train/Test split = {train_ratio:.2f}/{1-train_ratio:.2f}\n")
+# 4. Split train/test
+(train, test) = ratings.randomSplit([0.8, 0.2], seed=42)
 
-    # 1. Démarrage Spark
-    spark = SparkSession.builder \
-        .appName("ALSRecommender") \
-        .config("spark.executor.instances", "10") \
-        .config("spark.executor.cores", "2") \
-        .config("spark.executor.memory", "1g") \
-        .config("spark.driver.memory", "3g") \
-        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
-        .getOrCreate()
+# 5. Configuration et entraînement du modèle ALS
+als = ALS(
+    rank=12,
+    maxIter=15,
+    regParam=0.2,
+    userCol="userId",
+    itemCol="movieId",
+    ratingCol="rating",
+    coldStartStrategy="drop"
+)
 
-    # Set checkpoint directory
-    spark.sparkContext.setCheckpointDir("/tmp")
+model = als.fit(train)
 
-    # 2. Lecture des ratings
-    ratings = (
-        spark.read
-             .option("header", True)
-             .option("inferSchema", True)
-             .csv(ratings_path)
-             .selectExpr(
-                 "cast(userId  as int)    as userId",
-                 "cast(movieId as int)    as movieId",
-                 "cast(rating  as float)  as rating"
-             )
-    )
-    ratings = ratings.repartition(200)  # Adjust the number of partitions as needed
+# 6. Prédictions sur le test set
+predictions = model.transform(test)
 
-    # 3. Lecture des films si défini
-    if movies_path:
-        movies = spark.read.option("header", True).csv(movies_path)
-        print("Aperçu des films :")
-        movies.show(5, truncate=False)
+# 7. Évaluation du modèle
+evaluator = RegressionEvaluator(
+    metricName="rmse", 
+    labelCol="rating", 
+    predictionCol="prediction"
+)
 
-    # 4. Train / test split
-    train, test = ratings.randomSplit([train_ratio, 1-train_ratio], seed=42)
-    print(f"Count → train: {train.count()}, test: {test.count()}")
+rmse = evaluator.evaluate(predictions)
+print(f"\nRMSE du modèle: {rmse:.4f}")
 
-    # 5. Configuration & entraînement ALS
-    als = ALS(
-        userCol="userId",
-        itemCol="movieId",
-        ratingCol="rating",
-        rank=rank,
-        regParam=regParam,
-        maxIter=maxIter,
-        coldStartStrategy="drop"
-    )
-    model = als.fit(train)
+# 8. Exemple de prédictions
+print("\nExemple de prédictions:")
+predictions.select("userId", "movieId", "rating", "prediction").show(10)
 
-    # 6. Prédictions & RMSE
-    preds = model.transform(test)
-    metrics = ["rmse", "mae", "r2"]
-    evaluator = RegressionEvaluator(labelCol="rating", predictionCol="prediction")
+# 9. Recommandations utilisateur
+user_recs = model.recommendForAllUsers(10)
+print("\nRecommandations pour quelques utilisateurs:")
+user_recs.show(5, truncate=False)
 
-    print("\nÉvaluation du modèle :")
-    for metric in metrics:
-        evaluator.setMetricName(metric)
-        score = evaluator.evaluate(preds)
-        print(f"{metric.upper()} = {score:.4f}")
+# 10. Recommandations films
+item_recs = model.recommendForAllItems(10)
+print("\nRecommandations pour quelques films:")
+item_recs.show(5, truncate=False)
 
-    spark.stop()
-
-if __name__ == "__main__":
-    main()
+# Optionnel: Sauvegarde du modèle
+# model.save("hdfs:///models/als_model")
