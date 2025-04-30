@@ -11,9 +11,10 @@ services:
       - "9870:9870" # Hadoop NameNode UI
       # - "9000:9000"   # HDFS RPC
       - "8088:8088" # YARN ResourceManager UI
-      - "8080:8080" # Spark UI
+      - "7077:7077"  # Spark Master
+      # - "8080:8080" # Spark UI
       - "18080:18080" # Spark History Server UI
-      - "4040:4040" # Spark Job Monitoring UI
+      - "4040:4040" # Spark Job Monitoring UI @SOFIANE fix
     volumes:
       - namenode-data:/home/root/hadoop/dfs/name
       - ./data:/root/data
