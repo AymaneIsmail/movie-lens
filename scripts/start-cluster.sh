@@ -1,5 +1,5 @@
 #!/bin/bash
-# Role: namenode, datanode, zookeeper, kafka
+# Role: namenode, datanode, zookeeper, kafka, jupyter
 ROLE=$1
 
 echo "🔑 Starting SSH service..."
@@ -16,11 +16,8 @@ if [ "$ROLE" = "namenode" ]; then
     echo "🚀 Starting HDFS..."
     $HADOOP_HOME/sbin/start-dfs.sh
 
-    echo "🚀 Starting YARN..."
+    echo "🚀 Starting YARN (ResourceManager + NodeManagers)..."
     $HADOOP_HOME/sbin/start-yarn.sh
-
-    echo "🔍 Starting Spark Master..."
-    $SPARK_HOME/sbin/start-master.sh
 
     echo "📊 Starting Spark History Server..."
     $SPARK_HOME/sbin/start-history-server.sh
@@ -29,11 +26,11 @@ elif [ "$ROLE" = "datanode" ]; then
     echo "🚀 Starting DataNode..."
     hdfs datanode &
 
-    echo "⏳ Waiting for NameNode to become available..."
+    echo "⏳ Waiting for NameNode..."
     /root/wait-for-namenode.sh namenode 9000 60
-    
-    echo "🚀 Starting Spark Worker..."
-    $SPARK_HOME/sbin/start-worker.sh spark://namenode:7077
+
+    echo "🚀 Starting NodeManager..."
+    $HADOOP_HOME/sbin/yarn-daemon.sh start nodemanager
 
 elif [ "$ROLE" = "zookeeper" ]; then
     echo "🔌 Starting Zookeeper..."
@@ -42,9 +39,9 @@ elif [ "$ROLE" = "zookeeper" ]; then
 elif [ "$ROLE" = "kafka" ]; then
     echo "🦄 Starting Kafka..."
     $KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties \
-    --override zookeeper.connect=zookeeper:2181 \
-    --override listeners=PLAINTEXT://0.0.0.0:9092 \
-    --override advertised.listeners=PLAINTEXT://kafka:9092 &
+        --override zookeeper.connect=zookeeper:2181 \
+        --override listeners=PLAINTEXT://0.0.0.0:9092 \
+        --override advertised.listeners=PLAINTEXT://kafka:9092 &
 
     KAFKA_PID=$!
 
@@ -54,7 +51,6 @@ elif [ "$ROLE" = "kafka" ]; then
     echo "🛠 Creating Kafka topics..."
     /root/create-kafka-topics.sh
 
-    # Keep Kafka running
     wait $KAFKA_PID
 
 elif [ "$ROLE" = "jupyter" ]; then

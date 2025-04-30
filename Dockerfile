@@ -1,5 +1,5 @@
 # ========= STAGE: BASE =========
-ARG JAVA_VERSION=17
+ARG JAVA_VERSION=11
 FROM eclipse-temurin:${JAVA_VERSION}-jammy
 
 WORKDIR /root
@@ -54,6 +54,10 @@ RUN wget -q https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-$
 ENV SPARK_HOME=/usr/local/spark
 ENV SPARK_MASTER_PORT=7077
 ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+
+# === Copy Spark Shuffle jar to Hadoop YARN lib ===
+RUN cp /usr/local/spark/yarn/spark-${SPARK_VERSION}-yarn-shuffle.jar \
+      $HADOOP_HOME/share/hadoop/yarn/lib/
 
 # ========= INSTALL KAFKA =========
 ENV KAFKA_VERSION=3.7.2

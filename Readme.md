@@ -47,10 +47,16 @@ This project provides a ready-to-use Dockerized environment to work with:
 |   |-- spark_kafka_demo.ipynb
 |-- scripts/
     |-- hdfs
-      |-- hdfs_directory_setup.sh
-      |-- import_csv_to_hdfs.sh
+      |-- init_hdfs_dirs.sh
+      |-- clean_hdfs_dirs.sh
+      |-- upload_csv_to_hdfs.sh
+      |-- download_latest_hdfs_log.sh
+    |-- model
+      |-- spark_utils.py
+      |-- train_als.py
     |-- spark_batch_csv_count.py
     |-- start-cluster.sh
+    |-- wait-for-namenode.sh
 ```
 
 ## 🔄 Quick Start
@@ -90,28 +96,47 @@ make clean
 
 ### Automatic Download (Kaggle)
 - Use the `download_kaggle_dataset.sh` script to download and extract the MovieLens dataset from Kaggle. Before running it, make sure to enter your Kaggle credentials (`KAGGLE_USERNAME` and `KAGGLE_KEY`) in the script. You can generate an API key from your Kaggle account: [https://www.kaggle.com/settings](https://www.kaggle.com/settings).
-  ```bash
-  sh ./data/download_kaggle_dataset.sh
-  ```
+```bash
+sh ./data/download_kaggle_dataset.sh
+```
 
 ## 📂 HDFS Setup
 
-  Before using HDFS, you need to set up the necessary directories and import your datasets. Use the provided scripts for this:
+Before using HDFS, you need to set up the necessary directories and import your datasets. Use the provided scripts for this:
 
 1. **Set up HDFS directories**:
-   Run the `hdfs_directory_setup.sh` script to create the required directories in HDFS.
-  ```bash
-   sh ./scripts/hdfs/hdfs_directory_setup.sh
-  ```
+```bash
+make init-hdfs
+```
 
-  2. **Import datasets into HDFS**: Use the import_csv_to_hdfs.sh script to upload your CSV files to HDFS.
-   ```bash
-   sh ./scripts/hdfs/import_csv_to_hdfs.sh
-  ```
+2. **Import datasets into HDFS**:
+```bash
+make upload-csv
+```
 
-  ### Explanation
-- **`hdfs_directory_setup.sh`**: This script creates the necessary directory structure in HDFS.
-- **`import_csv_to_hdfs.sh`**: This script uploads your CSV files into the `/datasets` directory in HDFS.
+### Explanation
+
+Structure de Dossiers HDFS :
+
+```
+/ (HDFS Root)
+|-- errors/
+|   |-- 2025-04-28/      # Dossier des erreurs avec date
+|
+|-- input/               # Dossier pour les fichiers CSV
+|   |-- rating.csv       # Fichier CSV
+|   |-- movie.csv        # Fichier CSV
+|
+|-- logs/
+|   |-- 2025-04-28/      # Dossier des logs avec date
+|
+|-- processed/           # Dossier des fichiers traités
+```
+
+- **`init_hdfs_dirs.sh`**: This script creates the necessary directory structure in HDFS.
+- **`clean_hdfs_dirs.sh`**: This script resets the directory structure from HDFS.
+- **`upload_csv_to_hdfs.sh`**: This script uploads your CSV files into the `/input` directory in HDFS.
+- **`download_latest_hdfs_log.sh`**: This script downloads the latest log using a pattern (default: upload_ for upload logs). Usage: `sh download_latest_hdfs_log [PATTERN]`
 
 This ensures that users know how to initialize HDFS properly before running other components of the project.
 
