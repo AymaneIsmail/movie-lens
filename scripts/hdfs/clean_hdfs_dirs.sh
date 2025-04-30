@@ -2,7 +2,7 @@
 set -e
 
 # Liste des répertoires à nettoyer
-HDFS_DIRS=(/errors /input /logs /processed /models)
+HDFS_DIRS=(/spark-history /errors /input /logs /processed /models)
 
 check_hdfs_connection() {
     echo "🔌 Vérification de la connexion à HDFS..."
