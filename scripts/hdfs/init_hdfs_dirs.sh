@@ -2,7 +2,7 @@
 set -e
 
 # Liste des répertoires HDFS à créer
-HDFS_DIRS=(/errors /input /logs /processed /models)
+HDFS_DIRS=(/spark-history /errors /input /logs /processed /models)
 
 check_hdfs_connection() {
     echo "🔌 Vérification de la connexion à HDFS..."
@@ -19,6 +19,7 @@ create_hdfs_dirs() {
         else
             echo "📂 Création du dossier $dir..."
             hdfs dfs -mkdir -p "$dir"
+            hdfs dfs -chmod 777 "$dir"
         fi
     done
 }

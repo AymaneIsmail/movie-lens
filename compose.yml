@@ -1,107 +1,83 @@
 services:
+  # ---------- HADOOP / YARN MASTER ----------
   namenode:
     container_name: hadoop-namenode
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     hostname: namenode
-    networks:
-      - hadoop-net
+    networks: [hadoop-net]
     ports:
-      - "9870:9870" # Hadoop NameNode UI
-      # - "9000:9000"   # HDFS RPC
-      - "8088:8088" # YARN ResourceManager UI
-      - "7077:7077"  # Spark Master
-      # - "8080:8080" # Spark UI
-      - "18080:18080" # Spark History Server UI
-      - "4040:4040" # Spark Job Monitoring UI @SOFIANE fix
+      - "9870:9870"   # HDFS
+      - "8088:8088"   # YARN ResourceManager
+      - "18080:18080" # Spark History Server
     volumes:
       - namenode-data:/home/root/hadoop/dfs/name
       - ./data:/root/data
       - ./scripts:/root/scripts
     command: [ "sh", "-c", "/root/start-cluster.sh namenode" ]
 
+  # ---------- WORKERS (DataNode + NodeManager) ----------
   datanode1:
     container_name: hadoop-datanode1
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     hostname: datanode1
-    networks:
-      - hadoop-net
+    networks: [hadoop-net]
     volumes:
-      # @see https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml - dfs.datanode.data.dir
       - datanode1-data:/home/root/hadoop/dfs/data
     command: [ "sh", "-c", "/root/start-cluster.sh datanode" ]
-    depends_on:
-      - namenode
+    depends_on: [namenode]
 
   datanode2:
     container_name: hadoop-datanode2
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     hostname: datanode2
-    networks:
-      - hadoop-net
+    networks: [hadoop-net]
     volumes:
       - datanode2-data:/home/root/hadoop/dfs/data
     command: [ "sh", "-c", "/root/start-cluster.sh datanode" ]
-    depends_on:
-      - namenode
+    depends_on: [namenode]
 
+  # ---------- JUPYTER (Driver) ----------
   jupyter:
     container_name: jupyter-notebook
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     hostname: jupyter
-    networks:
-      - hadoop-net
+    networks: [hadoop-net]
     ports:
-      - "8888:8888"
+      - "8888:8888"   # Notebook
+      - "4040:4040"   # Spark UI de la première application
     volumes:
       - ./notebooks:/root/notebooks
       - ./data:/root/data
+    environment:
+      PYSPARK_DRIVER_PYTHON_OPTS: "notebook --NotebookApp.token=''"
+      SPARK_PUBLIC_DNS: "localhost"
     command: [ "sh", "-c", "/root/start-cluster.sh jupyter" ]
-    depends_on:
-      - namenode
+    depends_on: [namenode]
 
+  # ---------- Zookeeper / Kafka ----------
   zookeeper:
     container_name: zookeeper
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     hostname: zookeeper
-    networks:
-      - hadoop-net
-    ports:
-      - "2181:2181"
+    networks: [hadoop-net]
+    ports: ["2181:2181"]
     command: [ "sh", "-c", "/root/start-cluster.sh zookeeper" ]
 
   kafka:
     container_name: kafka
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     hostname: kafka
-    networks:
-      - hadoop-net
-    ports:
-      - "9092:9092"
-    depends_on:
-      - zookeeper
+    networks: [hadoop-net]
+    ports: ["9092:9092"]
+    depends_on: [zookeeper]
     command: [ "sh", "-c", "/root/start-cluster.sh kafka" ]
 
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
-    ports:
-    - "8085:8080"
-    networks:
-    - hadoop-net
-    depends_on:
-    - kafka
+    networks: [hadoop-net]
+    ports: ["8085:8080"]
+    depends_on: [kafka]
     environment:
       KAFKA_CLUSTERS_0_NAME: "local"
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
@@ -109,10 +85,8 @@ services:
   cassandra:
     container_name: cassandra
     image: cassandra:4.1
-    networks:
-      - hadoop-net
-    ports:
-      - "9042:9042"
+    networks: [hadoop-net]
+    ports: ["9042:9042"]
     volumes:
       - cassandra-data:/var/lib/cassandra
     environment:
@@ -120,7 +94,7 @@ services:
       CASSANDRA_NUM_TOKENS: 16
       CASSANDRA_START_RPC: "true"
     healthcheck:
-      test: [ "CMD", "cqlsh", "-e", "describe keyspaces" ]
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -130,7 +104,6 @@ volumes:
   datanode1-data:
   datanode2-data:
   cassandra-data:
-
 
 networks:
   hadoop-net:
