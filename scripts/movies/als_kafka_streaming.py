@@ -4,7 +4,8 @@ from contextlib import contextmanager
 from typing import Generator
 
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import from_json, col, explode
+from pyspark.sql.window import Window
+from pyspark.sql.functions import from_json, col, explode, row_number, desc
 from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType
 from pyspark.ml.recommendation import ALSModel
 
@@ -85,20 +86,30 @@ def run_streaming_job(params: Params) -> None:
         # 🔄 Processing batch
         def process_batch(batch_df: DataFrame, epoch_id: int) -> None:
             user_ids = batch_df.select("userId").distinct()
-            recommendations = (
+            recs = (
                 model.recommendForUserSubset(user_ids, params.top_n)
                 .select("userId", explode("recommendations").alias("rec"))
                 .select("userId", col("rec.movieId"), col("rec.rating").alias("score"))
                 .join(movies_df, on="movieId", how="left")
             )
-            recommendations = recommendations \
-                .withColumnRenamed("userId", "userid") \
+            # ➜ Calculer le rang 1…N par utilisateur, trié sur le score
+            w = Window.partitionBy("userId").orderBy(desc("score"))
+            recs_ranked = (
+                recs.withColumn("rank", row_number().over(w))
+                .filter(col("rank") <= params.top_n)
+                .select("userId", "movieId", "title", "genres", "score", "rank")
+            )
+            # ➜ Écrire dans Cassandra
+            (
+                recs_ranked
+                .withColumnRenamed("userId", "userid")
                 .withColumnRenamed("movieId", "movieid")
-            recommendations.write \
-                .format("org.apache.spark.sql.cassandra") \
-                .mode("append") \
-                .options(table=params.table, keyspace=params.keyspace) \
+                .write
+                .format("org.apache.spark.sql.cassandra")
+                .mode("append")
+                .options(table=params.table, keyspace=params.keyspace)
                 .save()
+            )
 
         # ▶️ Start stream
         (
