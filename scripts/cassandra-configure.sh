@@ -19,8 +19,9 @@ CREATE TABLE IF NOT EXISTS $TABLE (
   score float,
   title text,
   genres text,
-  PRIMARY KEY (userid, movieid)
-)
+  rank int,
+  PRIMARY KEY (userid, rank)
+) WITH CLUSTERING ORDER BY (rank ASC)
 "
 
 echo "✅ Keyspace et table initialisés avec succès."
