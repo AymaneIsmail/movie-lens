@@ -1,16 +1,7 @@
 #!/bin/bash
 set -e
 
-# Liste des répertoires HDFS à créer
-HDFS_DIRS=(/spark-history /errors /input /logs /processed /models)
-
-check_hdfs_connection() {
-    echo "🔌 Vérification de la connexion à HDFS..."
-    if ! hdfs dfs -ls / >/dev/null 2>&1; then
-        echo "❌ HDFS n'est pas accessible. Vérifiez que le NameNode est démarré."
-        exit 1
-    fi
-}
+source "$(dirname "$0")/hdfs-utils.sh"
 
 create_hdfs_dirs() {
     for dir in "${HDFS_DIRS[@]}"; do

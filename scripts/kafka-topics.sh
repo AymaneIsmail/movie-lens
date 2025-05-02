@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Note: Synchroniser le script avec le fichier docker-compose.yml
+# pour s'assurer que les noms de conteneurs et les ports sont corrects.
+
+# Usage: ./kafka-topics.sh
+
 # Liste des topics à créer
 TOPICS=("movielens_ratings")
 
@@ -14,3 +19,4 @@ for topic in "${TOPICS[@]}"; do
 done
 
 echo "✅ All topics created."
+
