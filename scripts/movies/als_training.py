@@ -17,15 +17,15 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass, asdict
 from typing import Tuple
+from contextlib import contextmanager
+from typing import Generator
 
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.types import (
-    StructType, StructField, IntegerType, FloatType, StringType
-)
+from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType
 from pyspark.ml.recommendation import ALS, ALSModel
 from pyspark.ml.evaluation import RegressionEvaluator
 
-# ──────────────── PARAMÈTRES ────────────────
+# ------------------------------- CONFIGURATION ------------------------------ #
 @dataclass
 class Paths:
     ratings: str = "hdfs:///input/rating.csv"
@@ -41,7 +41,7 @@ class ALSParams:
     implicitPrefs: bool = False
     coldStartStrategy: str = "drop"
 
-# ──────────────── SCHÉMAS ────────────────
+# ---------------------------------- SCHEMAS --------------------------------- #
 RATINGS_SCHEMA = StructType([
     StructField("userId",  IntegerType()),
     StructField("movieId", IntegerType()),
@@ -55,7 +55,21 @@ MOVIES_SCHEMA = StructType([
     StructField("genres",  StringType()),
 ])
 
-# ──────────────── FONCTIONS ────────────────
+# ------------------------------- SPARK SESSION ------------------------------ #
+@contextmanager
+def spark_session(app_name="TrainALSModel") -> Generator[SparkSession, None, None]:
+    spark = (
+        SparkSession.builder
+        .appName(app_name)
+        .master("yarn")
+        .getOrCreate()
+    )
+    try:
+        yield spark
+    finally:
+        spark.stop()
+
+# --------------------------------- FONCTIONS -------------------------------- #
 def load_data(spark: SparkSession, paths: Paths) -> Tuple[DataFrame, DataFrame]:
     print("📥 Lecture des fichiers CSV depuis HDFS…")
     ratings = spark.read.csv(paths.ratings, header=True, schema=RATINGS_SCHEMA)
@@ -93,9 +107,8 @@ def save(model: ALSModel, path: str) -> None:
     model.write().overwrite().save(path)
     print("🎉 Modèle enregistré avec succès.")
 
-# ──────────────── PIPELINE COMPOSÉE ────────────────
+# --------------------------------- PIPELINE --------------------------------- #
 def run(paths: Paths, als_params: ALSParams) -> None:
-    from spark_utils import spark_session
     with spark_session("TrainALSModel") as spark:
         ratings, _ = load_data(spark, paths)
         train_df, test_df = split(ratings)
@@ -103,7 +116,7 @@ def run(paths: Paths, als_params: ALSParams) -> None:
         evaluate(model, test_df)
         save(model, paths.model)
 
-# ──────────────── CLI ────────────────
+# ----------------------------------- MAIN ----------------------------------- #
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train an ALS recommendation model.")
     parser.add_argument("--rank",      type=int,   default=12)

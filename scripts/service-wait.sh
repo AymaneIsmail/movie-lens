@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage: ./wait-for-namenode.sh <host> <port> <timeout>
+# Usage: ./wait-for-service.sh <host> <port> <timeout>
 
 HOST="$1"
 PORT="$2"
@@ -9,7 +9,7 @@ echo "🔍 Waiting for $HOST:$PORT (timeout: ${TIMEOUT}s)..."
 
 for ((i=0;i<TIMEOUT;i++)); do
   if nc -z "$HOST" "$PORT"; then
-    echo "✅ NameNode is available!"
+    echo "✅ Service is available!"
     exit 0
   fi
   sleep 1

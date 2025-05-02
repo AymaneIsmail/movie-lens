@@ -4,6 +4,10 @@ Host localhost
 Host 0.0.0.0
   StrictHostKeyChecking no
   
-Host hadoop-*
+Host namenode
+   StrictHostKeyChecking no
+   UserKnownHostsFile=/dev/null
+   
+Host datanode*
    StrictHostKeyChecking no
    UserKnownHostsFile=/dev/null
