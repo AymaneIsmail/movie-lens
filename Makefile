@@ -35,6 +35,9 @@ cassandra-configure:
 als-train:
 	docker exec -it hadoop-namenode python3 /root/scripts/movies/als_training.py
 
+kafka-run: kafka-produce kafka-stream
+	@echo "Kafka producer and stream started."
+
 kafka-produce:
 	docker exec -it hadoop-namenode python3 /root/scripts/demo/kafka_producer.py
 

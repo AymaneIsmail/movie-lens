@@ -1,99 +1,38 @@
-import { useState, useEffect } from "react"
-import { Film } from "lucide-react"
-import type { Recommendation } from "@/api/types"
-import FilmCard from "./film-card"
+import { Film } from "lucide-react";
+import FilmCard from "./film-card";
+import { useMoviePosters } from "@/hooks/use-movie-posters";
+import { Recommendation } from "@/api/recommendations";
 
-// Fonction pour récupérer l'affiche du film
-const fetchPoster = async (title: string) => {
-    const apiKey = import.meta.env.VITE_OMDB_API_KEY
-    const response = await fetch(`https://www.omdbapi.com/?t=${title}&apikey=${apiKey}`)
-    console.log(apiKey)
-    console.log(response)
-  
-  if (!response.ok) {
-    throw new Error("Erreur lors de la récupération de l'affiche du film")
-  }
-
-  const data = await response.json()
-  console.log(data) // Affiche les données récupérées pour le débogage
-  if (data.Response === "False") {
-    throw new Error("Film non trouvé")
-  }
-
-  return data.Poster // Retourne l'URL de l'affiche
+interface FilmListProps {
+  films: Recommendation[];
 }
 
-export default function FilmList({ films }: { films: Recommendation[] }) {
-  const [posters, setPosters] = useState<{ [key: string]: string }>({}) // Un état pour stocker les affiches des films
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
+export function FilmList({ films }: FilmListProps) {
+  const { posters, isLoading, isError } = useMoviePosters(films);
 
-  // Récupérer les affiches des films après que les films soient chargés
-  useEffect(() => {
-    const loadPosters = async () => {
-        console.log('Loading posters...')
-      setLoading(true)
-      try {
-        const newPosters: { [key: string]: string } = {}
-        for (const film of films) {
-            console.log(`Fetching poster for ${film.title}...`)
-          try {
-            const poster = await fetchPoster(film.title)
-            console.log(`Poster URL: ${poster}`)
-            newPosters[film.movieid] = poster
-          } catch (err: any) {
-            console.error(`Error fetching poster for ${film.title}: ${err.message}`)
-            newPosters[film.movieid] = "/placeholder.svg"
-          }
-        }
-        setPosters(newPosters)
-        setLoading(false)
-      } catch (err: any) {
-        setError("Erreur lors de la récupération des affiches")
-        setLoading(false)
-      }
-    }
-
-    loadPosters()
-  }, [films])
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="text-center">
-          <div className="rounded-full bg-muted p-3">
-            <Film className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold">Loading...</h3>
-        </div>
-      </div>
-    )
+  if (isLoading) {
+    return <Placeholder message="Loading…" />;
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="text-center text-red-500">
-          <h3 className="mt-4 text-lg font-semibold">Error: {error}</h3>
-        </div>
-      </div>
-    )
+      <Placeholder
+        message="Erreur lors de la récupération des affiches"
+        isError
+      />
+    );
   }
 
   if (films.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="rounded-full bg-muted p-3">
-          <Film className="h-6 w-6 text-muted-foreground" />
-        </div>
-        <h3 className="mt-4 text-lg font-semibold">No films found</h3>
-        <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-          Try adjusting your filters to find what you're looking for.
-        </p>
-      </div>
-    )
+      <Placeholder
+        message="No films found"
+        subtitle="Try adjusting your filters to find what you're looking for."
+      />
+    );
   }
 
+  // ------------------------ Render normal ------------------------------------
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {films.map((film) => (
@@ -103,9 +42,35 @@ export default function FilmList({ films }: { films: Recommendation[] }) {
           genres={film.genres}
           score={film.score}
           rank={film.rank}
-          imageUrl={posters[film.movieid] || "/placeholder.svg"} // Utilise l'image récupérée ou une image par défaut
+          imageUrl={posters[film.movieid] ?? "/placeholder.svg"}
         />
       ))}
     </div>
-  )
+  );
+}
+
+interface PlaceholderProps {
+  message: string;
+  subtitle?: string;
+  isError?: boolean;
+}
+
+function Placeholder({ message, subtitle, isError }: PlaceholderProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center gap-2 max-w-sm mx-auto">
+      <div
+        className={`rounded-full p-3 ${isError ? "bg-red-100" : "bg-muted"}`}
+      >
+        <Film
+          className={`h-6 w-6 ${
+            isError ? "text-red-500" : "text-muted-foreground"
+          }`}
+        />
+      </div>
+      <h3 className="mt-2 text-lg font-semibold {isError ? 'text-red-500' : ''}">
+        {message}
+      </h3>
+      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    </div>
+  );
 }

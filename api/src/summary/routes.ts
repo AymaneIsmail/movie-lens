@@ -1,14 +1,12 @@
+import { SummaryRequestSchema } from "@/summary/schemas.js";
+import { getSummary } from "@/summary/service.js";
 import { Router } from "express";
-import { getRecommendations } from "@/recommendations/service.js";
-import { RecommendationsRequestSchema } from "@/recommendations/schemas.js";
 
-export function recommendationRouter() {
+export function summaryRouter() {
   const router = Router();
 
   router.get("/", async (req, res, next) => {
-    const recommendationReq = RecommendationsRequestSchema.safeParse(
-      req.query
-    );
+    const recommendationReq = SummaryRequestSchema.safeParse(req.query);
 
     if (!recommendationReq.success) {
       res.status(400).json({
@@ -20,13 +18,13 @@ export function recommendationRouter() {
     }
 
     try {
-      const recommendations = await getRecommendations(recommendationReq.data);
-      res.status(200).json(recommendations);
+      const summary = await getSummary(recommendationReq.data);
+      res.status(200).json(summary);
     } catch (error) {
       console.error("Error fetching recommendations:", error);
       res.status(500).json({
         error: "Internal server error",
-        details: "An error occurred while fetching recommendations.",
+        details: "An error occurred while fetching summary.",
       });
     }
   });

@@ -5,7 +5,7 @@ export const PaginationRequestSchema = z.object({
   pagestate: z.string().optional(),
 });
 
-export const GetRecommendationsRequestSchema = PaginationRequestSchema.extend({
+export const RecommendationsRequestSchema = PaginationRequestSchema.extend({
   userid: z.coerce.number().optional(),
   movieid: z.coerce.number().optional(),
   minscore: z.coerce.number().optional(),

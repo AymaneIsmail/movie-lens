@@ -1,18 +1,24 @@
-import { useState } from "react"
-import { Star } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
+import { useState } from "react";
+import { Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 interface FilmCardProps {
-  title: string
-  genres: string[]
-  score: number
-  rank: number
-  imageUrl: string
+  title: string;
+  genres: string[];
+  score: number;
+  rank: number;
+  imageUrl: string;
 }
 
-export default function FilmCard({ title, genres, score, rank, imageUrl }: FilmCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
+export default function FilmCard({
+  title,
+  genres,
+  score,
+  rank,
+  imageUrl,
+}: FilmCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <Card
@@ -42,9 +48,15 @@ export default function FilmCard({ title, genres, score, rank, imageUrl }: FilmC
 
         {/* Info overlay that slides up on hover */}
         <div
-          className={`absolute inset-0 bg-gradient-to-t from-background/95 via-background/80 to-transparent flex flex-col justify-end p-4 transition-all duration-500 ${isHovered ? "translate-y-0 opacity-100" : "translate-y-[30%] opacity-90"}`}
+          className={`absolute inset-0 bg-gradient-to-t from-background/95 via-background/80 to-transparent flex flex-col justify-end p-4 transition-all duration-500 ${
+            isHovered
+              ? "translate-y-0 opacity-100"
+              : "translate-y-[30%] opacity-90"
+          }`}
         >
-          <h3 className="text-foreground text-lg font-bold mb-2 line-clamp-2">{title}</h3>
+          <h3 className="text-foreground text-lg font-bold mb-2 line-clamp-2">
+            {title}
+          </h3>
           <div className="flex flex-wrap gap-1 mb-3">
             {genres.slice(0, 3).map((genre) => (
               <Badge key={genre} variant="secondary" className="text-xs">
@@ -60,12 +72,19 @@ export default function FilmCard({ title, genres, score, rank, imageUrl }: FilmC
 
           {/* Stats that animate in on hover */}
           <div
-            className={`grid gap-2 transition-all duration-700 ${isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            className={`grid gap-2 transition-all duration-700 ${
+              isHovered
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
           >
             <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
               <div
                 className="bg-yellow-500 h-full rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${(score / 10) * 100}%`, transitionDelay: "200ms" }}
+                style={{
+                  width: `${(score / 10) * 100}%`,
+                  transitionDelay: "200ms",
+                }}
               />
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -76,7 +95,10 @@ export default function FilmCard({ title, genres, score, rank, imageUrl }: FilmC
             <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden mt-1">
               <div
                 className="bg-primary h-full rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${Math.min(100, (1 / rank) * 100 * 5)}%`, transitionDelay: "400ms" }}
+                style={{
+                  width: `${Math.min(100, (1 / rank) * 100 * 5)}%`,
+                  transitionDelay: "400ms",
+                }}
               />
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -87,5 +109,5 @@ export default function FilmCard({ title, genres, score, rank, imageUrl }: FilmC
         </div>
       </div>
     </Card>
-  )
+  );
 }

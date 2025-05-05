@@ -1,13 +1,13 @@
 import type { QueryOptions } from "cassandra-driver";
 import type {
-  GetRecommendationsRequest,
-  GetRecommendationsResponse,
+  RecommendationsRequest,
+  RecommendationsResponse,
   QueryWithParams,
 } from "@/recommendations/types.js";
 import { client } from "@/database.js";
 import { mapResultSetToRecommendationResponse } from "@/recommendations/mappers.js";
 
-function buildQueryOptions(req: GetRecommendationsRequest): QueryOptions {
+function buildQueryOptions(req: RecommendationsRequest): QueryOptions {
   return {
     prepare: true,
     fetchSize: req.pagesize,
@@ -16,9 +16,15 @@ function buildQueryOptions(req: GetRecommendationsRequest): QueryOptions {
 }
 
 function buildRecommendationsQuery(
-  req: GetRecommendationsRequest
+  req: RecommendationsRequest,
+  type: "recommendations" | "count" = "recommendations"
 ): QueryWithParams {
   let query = "SELECT * FROM recommendations";
+
+  if (type === "count") {
+    query = "SELECT count(*) FROM recommendations";
+  }
+
   const params: unknown[] = [];
   const where: string[] = [];
 
@@ -31,6 +37,7 @@ function buildRecommendationsQuery(
     where.push(`movieid = ?`);
     params.push(req.movieid);
   }
+
   if (req.minscore !== undefined) {
     where.push(`score >= ?`);
     params.push(req.minscore);
@@ -44,17 +51,28 @@ function buildRecommendationsQuery(
     query = `${query} ORDER BY rank ASC`;
   }
 
+  // enlever en prod
+  query = `${query} ALLOW FILTERING`;
+
   return { query, params };
 }
 
+async function getRecommendationsTotalCount(
+  req: RecommendationsRequest
+): Promise<number> {
+  const { query, params } = buildRecommendationsQuery(req, "count");
+  const result = await client.execute(query, params, { prepare: true });
+  return result.first()["count"];
+}
+
 export async function getRecommendations(
-  req: GetRecommendationsRequest
-): Promise<GetRecommendationsResponse> {
+  req: RecommendationsRequest
+): Promise<RecommendationsResponse> {
   const { query, params } = buildRecommendationsQuery(req);
-  console.log({ req, query, params });
   const options = buildQueryOptions(req);
 
   const result = await client.execute(query, params, options);
+  const totalCount = await getRecommendationsTotalCount(req);
 
-  return mapResultSetToRecommendationResponse(result);
+  return mapResultSetToRecommendationResponse(result, totalCount);
 }

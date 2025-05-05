@@ -3,6 +3,7 @@ import cors from "cors";
 import { recommendationRouter } from "@/recommendations/routes.js";
 import { env } from "@/env.js";
 import { client } from "@/database.js";
+import { summaryRouter } from "@/summary/routes.js";
 
 function createExpressApp() {
   const app = express();
@@ -11,6 +12,7 @@ function createExpressApp() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use("/recommendations", recommendationRouter());
+  app.use("/summary", summaryRouter());
 
   app.get("/", (req, res) => {
     res.status(200).json({ message: "Welcome to the recommendations API!" });

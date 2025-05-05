@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS $TABLE (
   title text,
   genres text,
   rank int,
+  imdbid int,
+  tmdbid int,
   PRIMARY KEY (userid, rank)
 ) WITH CLUSTERING ORDER BY (rank ASC)
 "

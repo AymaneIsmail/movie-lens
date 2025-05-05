@@ -14,6 +14,7 @@ from pyspark.ml.recommendation import ALSModel
 class Params:
     ratings: str = "hdfs:///input/rating.csv"
     movies: str = "hdfs:///input/movie.csv"
+    links: str = "hdfs:///input/link.csv"
     model: str = "hdfs:///models/als"
     top_n: int = 10
     kafka_topic: str = "movielens_ratings"
@@ -39,6 +40,12 @@ MOVIES_SCHEMA = StructType([
     StructField("genres", StringType()),
 ])
 
+LINKS_SCHEMA = StructType([
+    StructField("movieId", IntegerType()),
+    StructField("imdbId", IntegerType()),
+    StructField("tmdbId", IntegerType()),
+])
+
 # ------------------------------- SPARK SESSION ------------------------------ #
 @contextmanager
 def spark_session(app_name: str, cassandra_host: str) -> Generator[SparkSession, None, None]:
@@ -58,10 +65,8 @@ def spark_session(app_name: str, cassandra_host: str) -> Generator[SparkSession,
 # --------------------------------- MAIN JOB --------------------------------- #
 def run_streaming_job(params: Params) -> None:
     with spark_session(params.app_name, params.cassandra_host) as spark:
-        # 🔁 Load ALS model
         model = ALSModel.load(params.model)
 
-        # 🎞 Load movies metadata
         movies_df = (
             spark.read
             .option("header", "true")
@@ -70,7 +75,14 @@ def run_streaming_job(params: Params) -> None:
             .select("movieId", "title", "genres")
         )
 
-        # 🧾 Kafka streaming input
+        links_df = (
+            spark.read
+            .option("header", "true")
+            .schema(LINKS_SCHEMA)
+            .csv(params.links)
+            .select("movieId", "imdbId", "tmdbId")
+        )
+
         df_kafka = (
             spark.readStream
             .format("kafka")
@@ -91,19 +103,22 @@ def run_streaming_job(params: Params) -> None:
                 .select("userId", explode("recommendations").alias("rec"))
                 .select("userId", col("rec.movieId"), col("rec.rating").alias("score"))
                 .join(movies_df, on="movieId", how="left")
+                .join(links_df, on="movieId", how="left")
             )
             # ➜ Calculer le rang 1…N par utilisateur, trié sur le score
             w = Window.partitionBy("userId").orderBy(desc("score"))
             recs_ranked = (
                 recs.withColumn("rank", row_number().over(w))
                 .filter(col("rank") <= params.top_n)
-                .select("userId", "movieId", "title", "genres", "score", "rank")
+                .select("userId", "movieId", "title", "genres", "score", "rank", "imdbId", "tmdbId")
             )
             # ➜ Écrire dans Cassandra
             (
                 recs_ranked
                 .withColumnRenamed("userId", "userid")
                 .withColumnRenamed("movieId", "movieid")
+                .withColumnRenamed("imdbId", "imdbid")
+                .withColumnRenamed("tmdbId", "tmdbid")
                 .write
                 .format("org.apache.spark.sql.cassandra")
                 .mode("append")

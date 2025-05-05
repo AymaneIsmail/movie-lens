@@ -5,6 +5,8 @@ export interface Recommendation {
   rank: number;
   title: string;
   genres: string[];
+  imdbid: string;
+  tmdbid: string;
 }
 
 export interface PaginationRequest {
@@ -12,14 +14,15 @@ export interface PaginationRequest {
   pagestate?: string;
 }
 
-export interface GetRecommendationsRequest extends PaginationRequest {
+export interface RecommendationsRequest extends PaginationRequest {
   userid?: number;
   movieid?: number;
   minscore?: number;
 }
 
-export interface GetRecommendationsResponse {
+export interface RecommendationsResponse {
   items: Recommendation[];
+  totalCount: number;
   pageState: string | null;
 }
 
