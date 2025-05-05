@@ -1,125 +1,267 @@
-# Big Data Pseudo-distributed Environment with Hadoop, Spark, Kafka, Python, and Jupyter
+# Movie Lens Recommendations
 
 ## 🌍 Project Overview
-This project provides a ready-to-use Dockerized environment to work with:
-- **Hadoop 3.3.6** (pseudo-distributed)
-- **Spark 3.5.1** (standalone mode)
-- **Kafka 3.6.1** (with Zookeeper)
-- **Python 3** + **PySpark**
-- **Jupyter Notebook**
 
-## 📊 Architecture
-- Hadoop HDFS for distributed file storage (single-node setup)
-- Spark for batch and streaming data processing
-- Kafka for streaming ingestion
-- Python environment with Jupyter for development and experimentation
+This project provides a complete pseudo-distributed environment for Big Data processing, enabling:
 
-## 🔧 Project Structure
+* **Batch & streaming** data processing
+* **Machine Learning model training (ALS)**
+* **Real-time recommendations with Kafka & Cassandra**
+* **Exploration and prototyping using Jupyter notebooks**
+
+### Technologies Included
+
+* **Hadoop 3.3.6** (HDFS, YARN)
+* **Spark 3.5.1** (Standalone)
+* **Kafka 3.6.1 + Zookeeper**
+* **Python 3 + PySpark**
+* **Cassandra** (NoSQL)
+* **Jupyter Notebook**
+
+---
+
+## 📊 Architecture Overview
+
+### Data Flow
+
+```
+[Kafka Producer] --> [Kafka Topic] --> [Spark Structured Streaming] --> [ALS Model Prediction] --> [Cassandra]
+                                               \
+                                                └--> [Jupyter Notebook] --> [Exploration/Analysis]
+```
+
+### Accessible Ports
+
+| Service       | URL / Port                                       | Description                    |
+| ------------- | ------------------------------------------------ | ------------------------------ |
+| Jupyter       | [http://localhost:8888](http://localhost:8888)   | Python interactive development |
+| Spark UI      | [http://localhost:4040](http://localhost:4040)   | Spark driver UI (batch jobs)   |
+| Spark History | [http://localhost:18080](http://localhost:18080) | Historical Spark jobs          |
+| Kafka UI      | [http://localhost:8085](http://localhost:8085)   | Kafka monitoring (if enabled)  |
+
+---
+
+## 📁 Project Structure
+
 ```
 /
-|-- data
-    |-- genome_scores.csv
-    |-- genome_tags.csv
-    |-- link.csv
-    |-- movie.csv
-    |-- rating.csv
-    |-- tag.csv
-|-- Dockerfile
-|-- docker-compose.yml
-|-- Makefile
-|-- requirements.txt
+|-- data/                         # Raw CSV data mounted into containers
+|-- Dockerfile                    # Hadoop/Spark base image
+|-- compose.yml                   # Docker Compose configuration
+|-- Makefile                      # CLI tasks (see below)
+|-- requirements.txt              # Python dependencies
+
 |-- config/
-|   |-- hadoop/
-|       |-- core-site.xml
-|       |-- hdfs-site.xml
-|       |-- mapred-site.xml
-|       |-- yarn-site.xml
-|-- notebooks/
+|   |-- hadoop/                   # Hadoop configuration
+|   |-- spark/                    # Spark configuration (spark-defaults.conf, etc.)
+|   |-- ssh/                      # SSH config
+
+|-- notebooks/                    # Jupyter notebooks
 |   |-- spark_kafka_demo.ipynb
+
 |-- scripts/
-    |-- hdfs
-      |-- hdfs_directory_setup.sh
-      |-- import_csv_to_hdfs.sh
-    |-- spark_batch_csv_count.py
+    |-- demo/
+    |   |-- kafka_producer.py      # Simulate streaming ingestion from CSV
+    |-- movies/
+    |   |-- als_kafka_streaming.py # Real-time inference from Kafka + Cassandra
+    |   |-- als_training.py        # Training the ALS recommender model
+    |   |-- als_hypertuning.py     # ALS parameter hypertuning
+    |-- cassanda-configure.sh      # Initialize Cassandra tables
+    |-- hdfs-clean.sh              # Cleanup HDFS directory tree
+    |-- hdfs-configure.sh          # Initialize HDFS directory tree
+    |-- hdfs-download-log.sh       # Download latest log file
+    |-- hdfs-upload-csv.sh         # Upload CSV files to HDFS
+    |-- hdfs-utils.sh              # Common HDFS configuration and utils
+    |-- kafka-topics.sh            # Initialize Kafka topics
+    |-- service-start.sh           # Cluster entrypoint per service
+    |-- service-wait.sh            # Wait until a service is ready
 ```
 
-## 🔄 Quick Start
+### HDFS Folder Structure
 
-### 1. Build the Docker Image
+```
+/ (HDFS root)
+|-- input/              # Ingested movie/rating CSV files
+|-- models/             # Saved Spark ML models (ALS)
+|-- logs/               # Logs generated during processing
+|-- processed/          # Moved files after processing
+|-- errors/             # Files with errors
+|-- tmps/               # Temporary checkpoint data
+```
+
+---
+
+## ⚒️ Setup & Commands
+
+### 1. Build Docker Image
+
 ```bash
 make build
 ```
 
-### 2. Launch the Environment
+### 2. Start the Cluster
+
 ```bash
 make up
 ```
 
-This will start:
-- Hadoop HDFS & YARN
-- Kafka + Zookeeper
-- Jupyter Notebook (accessible on http://localhost:8888)
+* Starts all services in detached mode
 
-### 3. Access the Container
+### 3. Initialize HDFS + Cassandra + Upload Data
+
 ```bash
-make shell
+make init
 ```
 
-### 4. Shut Down
+* Creates HDFS folders
+* Uploads data from `/data` to `/input` in HDFS
+* Creates Cassandra keyspace + table
+
+### 4. Shutdown the Cluster
+
 ```bash
 make down
 ```
 
-### 5. Clean Everything (containers, images, volumes)
+### 5. Cleanup Everything
+
 ```bash
 make clean
 ```
 
-## 🎬 Download MovieLens Dataset
+* Removes containers, volumes, and networks
 
-### Automatic Download (Kaggle)
-- Use the `download_kaggle_dataset.sh` script to download and extract the MovieLens dataset from Kaggle. Before running it, make sure to enter your Kaggle credentials (`KAGGLE_USERNAME` and `KAGGLE_KEY`) in the script. You can generate an API key from your Kaggle account: [https://www.kaggle.com/settings](https://www.kaggle.com/settings).
-  ```bash
-  sh ./data/download_kaggle_dataset.sh
-  ```
+### 6. Shell Access (for debugging)
 
-## 📂 HDFS Setup
+```bash
+make shell
+```
 
-  Before using HDFS, you need to set up the necessary directories and import your datasets. Use the provided scripts for this:
-
-1. **Set up HDFS directories**:
-   Run the `hdfs_directory_setup.sh` script to create the required directories in HDFS.
-  ```bash
-   sh ./scripts/hdfs/hdfs_directory_setup.sh
-  ```
-
-  2. **Import datasets into HDFS**: Use the import_csv_to_hdfs.sh script to upload your CSV files to HDFS.
-   ```bash
-   sh ./scripts/hdfs/import_csv_to_hdfs.sh
-  ```
-
-  ### Explanation
-- **`hdfs_directory_setup.sh`**: This script creates the necessary directory structure in HDFS.
-- **`import_csv_to_hdfs.sh`**: This script uploads your CSV files into the `/datasets` directory in HDFS.
-
-This ensures that users know how to initialize HDFS properly before running other components of the project.
-
-## 📄 Notebooks & Scripts
-- **spark_kafka_demo.ipynb** : Connects Spark Structured Streaming to a Kafka topic and displays the streamed data.
-- **spark_batch_csv_count.py** : A simple Spark batch job reading a CSV file from HDFS and counting rows.
-
-## 🔔 Notes
-- Hadoop HDFS Web UI: [http://localhost:9870](http://localhost:9870)
-- Ensure you manually create Kafka topics using:
-  ```bash
-  kafka-topics.sh --create --topic test-topic --bootstrap-server localhost:9092
-  ```
-- Upload datasets to HDFS:
-  ```bash
-  hdfs dfs -mkdir -p /datasets
-  hdfs dfs -put your_file.csv /datasets/
-  ```
+* Open a shell inside the NameNode container
 
 ---
 
-Made with ❤️ by ABDELHAY, SOFIANE et AYMANE
+## 🔧 HDFS Management Scripts
+
+### Configure Folder Structure
+
+```bash
+make hdfs-configure
+```
+
+Runs `hdfs-configure.sh` to create:
+
+* Test the HDFS connection
+* `/input`, `/logs`, `/models`, etc.
+
+### Clean Up All HDFS Folders
+
+```bash
+make hdfs-clean
+```
+
+Deletes all contents via `hdfs-clean.sh`
+
+### Upload CSV Files
+
+```bash
+make hdfs-upload-csv
+```
+
+Pushes all `.csv` files from local `/data/` to HDFS `/input/` with logging
+
+### Download HDFS Log
+
+```bash
+make hdfs-download-log
+```
+
+Downloads the latest log file from `/logs` into local `/data/`
+
+---
+
+## 📓 Cassandra Management
+
+### Create Keyspace and Table
+
+```bash
+make cassandra-configure
+```
+
+* Keyspace: `reco`
+* Table: `recommendations(userId, movieId, score, title, genres)`
+* Uses `PRIMARY KEY (userId, movieId)` to enable upserts
+
+---
+
+## 🧰 Model & Streaming Jobs
+
+### Train ALS Model (batch)
+
+```bash
+make als-train
+```
+
+* Reads `/input/rating.csv`
+* Saves ALS model to HDFS under `/models/als`
+
+### Simulate Real-Time Ratings (Kafka Producer)
+
+```bash
+make kafka-produce
+```
+
+* Reads historical ratings line-by-line and pushes to Kafka topic
+* Topic: `movielens_ratings`
+
+### Start Real-Time Inference Engine (Kafka + ALS + Cassandra)
+
+```bash
+make kafka-stream
+```
+
+* Consumes Kafka ratings
+* Loads ALS model
+* Predicts Top-N recommendations per user
+* Joins movie metadata
+* Saves recommendations to Cassandra in table `recommendations`
+
+---
+
+## 📽️ Jupyter Notebook Access
+
+Once the cluster is up, access Jupyter via:
+
+```
+http://localhost:8888
+```
+
+Use it to:
+
+* Explore HDFS data
+* Load Spark models
+* Query Cassandra
+* Visualize recommendations
+
+---
+
+## 💾 Dataset: MovieLens
+
+You can use the built-in downloader to fetch the dataset directly from Kaggle:
+
+```bash
+sh ./data/download_kaggle_dataset.sh
+```
+
+Make sure to set your Kaggle credentials (`KAGGLE_USERNAME`, `KAGGLE_KEY`) in the script or environment.
+
+Dataset includes:
+
+* `ratings.csv`
+* `movies.csv`
+* `tags.csv`
+* etc.
+
+---
+
+Made with ❤️ by ABDELHAY, SOFIANE & AYMANE
